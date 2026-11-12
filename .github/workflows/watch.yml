@@ -1,0 +1,51 @@
+name: anyscale-stock-watch
+
+# Anyscale 排队/库存监视：有 hosted GPU / serverless cloud 名额就推 Telegram。
+# 唯一定时腿是 cron-job.org（本账号 GA 原生 schedule 不 fire），这里不写 on: schedule。
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: 'cron 腿填 cron（无变化静默）；手动触发留空'
+        required: false
+        default: 'manual'
+
+concurrency:
+  group: anyscale-stock-watch
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 探测排队状态
+        env:
+          AS_KEYS: ${{ secrets.AS_KEYS }}
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+          TG_THREAD_ID: ${{ secrets.TG_THREAD_ID }}
+          INPUT_SOURCE: ${{ github.event.inputs.source }}
+        run: python3 watch.py
+
+      - name: 提交状态变化
+        if: always()
+        run: |
+          if [ -n "$(git status --porcelain state.json)" ]; then
+            git config user.name  "stockwatch-bot"
+            git config user.email "actions@users.noreply.github.com"
+            git add state.json
+            git commit -m "state: $(date -u '+%F %T') UTC"
+            git push
+          else
+            echo "state unchanged"
+          fi
+
+      - name: run 摘要
+        if: always()
+        run: echo "- $(date -u '+%F %T UTC') anyscale stock watch done" >> "$GITHUB_STEP_SUMMARY"
