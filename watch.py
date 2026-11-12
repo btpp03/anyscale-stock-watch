@@ -166,6 +166,18 @@ def main():
         json.dump(state, f, ensure_ascii=False, indent=2, sort_keys=True)
 
     body = "\n".join(lines)
+    warn = ""
+    exp = os.environ.get("KEY_EXPIRES", "").strip()
+    if exp:
+        try:
+            days = (datetime.strptime(exp, "%Y-%m-%d").replace(tzinfo=BJ) - datetime.now(BJ)).days
+            if days <= 10:
+                warn = "\n⚠️ API key %s 过期，还剩 %d 天，去 console → API keys 换新的并更新 secret AS_KEYS" % (exp, days)
+        except Exception:
+            pass
+    if warn:
+        lines.append(warn.strip())
+        body = "\n".join(lines)
     if any_open:
         head = "🚨 Anyscale 有货了！立即去开：https://console.anyscale.com/cloud-setup"
         if SOURCE != "cron" or changed:
@@ -176,6 +188,11 @@ def main():
 
     if changed:
         tg("🔔 Anyscale 排队状态变化\n\n%s\n\n来源:%s | %s" % (body, SOURCE, REPO_URL))
+    elif warn and state.get("_exp_warn") != datetime.now(BJ).strftime("%Y-%m-%d"):
+        state["_exp_warn"] = datetime.now(BJ).strftime("%Y-%m-%d")
+        with open(STATE_PATH, "w") as f:
+            json.dump(state, f, ensure_ascii=False, indent=2, sort_keys=True)
+        tg("ℹ️ Anyscale 监视正常（仍排队）\n\n%s\n\n%s" % (body, REPO_URL))
     elif SOURCE != "cron":
         tg("✅ Anyscale 监视正常（仍排队）\n\n%s\n\n%s" % (body, REPO_URL))
     else:

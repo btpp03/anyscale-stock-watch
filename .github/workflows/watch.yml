@@ -30,6 +30,7 @@ jobs:
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
           TG_THREAD_ID: ${{ secrets.TG_THREAD_ID }}
+          KEY_EXPIRES: ${{ secrets.KEY_EXPIRES }}
           INPUT_SOURCE: ${{ github.event.inputs.source }}
         run: python3 watch.py
 
