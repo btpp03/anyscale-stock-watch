@@ -143,6 +143,7 @@ def main():
     changed = []
     lines = []
     any_open = False
+    dirty = False
     for k in keys:
         r = probe(k["name"], k["key"])
         if r.get("error"):
@@ -153,8 +154,10 @@ def main():
         lines.append("%s %s — %s / clouds=%s" % (r["name"], r.get("who"), r["status"], r["clouds"]))
         sig = "%s|%s" % (r["status"], r["clouds"])
         old = (state.get(k["name"]) or {}).get("sig")
-        state[k["name"]] = {"sig": sig, "status": r["status"], "clouds": r["clouds"],
-                            "ts": datetime.now(BJ).strftime("%Y-%m-%d %H:%M")}
+        if sig != old:
+            dirty = True
+            state[k["name"]] = {"sig": sig, "status": r["status"], "clouds": r["clouds"],
+                                "ts": datetime.now(BJ).strftime("%Y-%m-%d %H:%M")}
         if is_open(r):
             any_open = True
             if sig != old:
@@ -162,8 +165,9 @@ def main():
         elif old and old != sig:
             changed.append(k["name"] + "(状态变化)")
 
-    with open(STATE_PATH, "w") as f:
-        json.dump(state, f, ensure_ascii=False, indent=2, sort_keys=True)
+    if dirty:
+        with open(STATE_PATH, "w") as f:
+            json.dump(state, f, ensure_ascii=False, indent=2, sort_keys=True)
 
     body = "\n".join(lines)
     warn = ""

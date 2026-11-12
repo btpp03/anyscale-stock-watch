@@ -3,6 +3,10 @@
     "clouds": 0,
     "sig": "IN_WAITLIST|0",
     "status": "IN_WAITLIST",
+<<<<<<< Updated upstream
     "ts": "2026-11-12 22:01"
+=======
+    "ts": "2026-11-12 22:02"
+>>>>>>> Stashed changes
   }
 }
